@@ -1,6 +1,47 @@
 <?php
 
+// Enable error reporting for debugging (disable in production)
+error_reporting(E_ALL);
+ini_set('display_errors', 0); // Don't display errors to users
+ini_set('log_errors', 1);
+ini_set('error_log', 'fatal_error_log.txt');
+
+// Set up error handler
+function customErrorHandler($errno, $errstr, $errfile, $errline) {
+    $errorMessage = "Error [$errno]: $errstr in $errfile on line $errline\n";
+    error_log($errorMessage);
+    return true; // Don't execute PHP's internal error handler
+}
+
+// Set up fatal error handler
+function handleFatalError() {
+    $error = error_get_last();
+    if ($error !== NULL && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_CORE_WARNING, E_COMPILE_ERROR, E_COMPILE_WARNING])) {
+        $errorMessage = "Fatal error: " . $error['message'] . " in " . $error['file'] . " on line " . $error['line'] . "\n";
+        error_log($errorMessage);
+    }
+}
+
+// Register error handlers
+set_error_handler('customErrorHandler');
+register_shutdown_function('handleFatalError');
+
 require_once("require.php");
+
+// Validate configuration
+if (!isset($config) || !is_array($config)) {
+    error_log("Configuration not loaded properly");
+    die("Configuration error. Please check the configuration files.");
+}
+
+// Validate required configuration keys
+$required_config = ['botToken', 'adminID', 'db'];
+foreach ($required_config as $key) {
+    if (!isset($config[$key])) {
+        error_log("Missing required configuration key: $key");
+        die("Configuration error: Missing $key");
+    }
+}
 
 // Initialize variables to prevent undefined variable errors
 $message = $message ?? '';
@@ -17,17 +58,20 @@ $callback_chat_id = $callback_chat_id ?? null;
 $callback_message_id = $callback_message_id ?? null;
 $callback_username = $callback_username ?? '';
 
-$bot = new Bot($config);
-
-$db = new DB($config, $bot);
-
-$resultado = $bot->obtenerMensaje("☀️","💤");
-
-$hora = $resultado['mensaje'];
-$date = $resultado['fecha'];
-
-// Initialize status message
-$statusMessage = "🟢 Online";
+try {
+    $bot = new Bot($config);
+    $db = new DB($config, $bot);
+    
+    $resultado = $bot->obtenerMensaje("☀️","💤");
+    $hora = $resultado['mensaje'];
+    $date = $resultado['fecha'];
+    
+    // Initialize status message
+    $statusMessage = "🟢 Online";
+} catch (Exception $e) {
+    error_log("Initialization error: " . $e->getMessage());
+    die("Application initialization failed. Please check the logs.");
+}
 
 if (preg_match('/^[\/\.,\$]/', $message)) {
     // Verificar si el usuario no está registrado

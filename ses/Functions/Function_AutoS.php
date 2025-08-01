@@ -1,7 +1,7 @@
 <?php
 
-require_once __DIR__."/Capsolver/autoload.php";
-require_once __DIR__."/Class_CurlX.php";
+require_once __DIR__."/../Class/Capsolver/autoload.php";
+require_once __DIR__."/../Class/Class_CurlX.php";
 
 /**
  * Safe wrapper for CurlX::ParseString to handle null values

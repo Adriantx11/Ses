@@ -20,15 +20,22 @@ class DB {
             $this->config['db']['password'],
             $this->config['db']['database']
         );
-        $this->conn->set_charset("utf8");
 
         if (!$this->conn) {
-            $message = "<b>🛑 DB connection Failed!\n\n" . json_encode($this->config['db']) . "</b>";
+            $error = mysqli_connect_error();
+            $message = "<b>🛑 DB connection Failed!\n\nError: " . $error . "\n\n" . json_encode($this->config['db']) . "</b>";
             $this->bot->callApi('sendmessage',[
                 'chat_id'=>$this->config['adminID'],
                 'text'=>$message,
                 'parse_mode'=>'html']);
             $this->logSummary($message);
+            die("Database connection failed: " . $error);
+        }
+        
+        // Set charset after successful connection
+        if (!$this->conn->set_charset("utf8")) {
+            $error = mysqli_error($this->conn);
+            error_log("Failed to set charset: " . $error);
         }
     }
 
